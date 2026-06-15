@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+    
+jobs: 
+  test: 
+    runs-on: ubunto-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Build
+      - uses: cargo build
+      - uses: Format check
+      - run: cargo test
+      - name: Format check
+      - run: cargo fmt --check
+      - name: Clippy
+      - run: cargo clippy -- -D warnings

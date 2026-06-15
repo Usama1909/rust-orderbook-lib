@@ -1,0 +1,16 @@
+[package]
+name = "rust-orderbook-lib"
+version = "0.1.0"
+edition = "2021"
+description = "A production-grade order book library with price-time priority matching"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Usama1909/rust-orderbook-lib"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "orderbook_bench"
+harness = false
