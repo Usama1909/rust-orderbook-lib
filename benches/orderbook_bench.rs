@@ -31,5 +31,10 @@ fn bench_cancel(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_submit_resting, bench_submit_matching, bench_cancel);
+criterion_group!(
+    benches,
+    bench_submit_resting,
+    bench_submit_matching,
+    bench_cancel
+);
 criterion_main!(benches);

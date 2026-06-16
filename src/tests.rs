@@ -2,11 +2,11 @@
 mod tests {
     use crate::order::{Order, Side};
     use crate::orderbook::OrderBook;
-    
-    fn buy (id: u64, price: u64, qty: u64) -> Order {
+
+    fn buy(id: u64, price: u64, qty: u64) -> Order {
         Order::new(id, "NVDA", Side::Buy, price, qty)
     }
-    
+
     fn sell(id: u64, price: u64, qty: u64) -> Order {
         Order::new(id, "NVDA", Side::Sell, price, qty)
     }
@@ -29,7 +29,7 @@ mod tests {
     #[test]
     fn test_cancel_order() {
         let mut book = OrderBook::new("NVDA");
-        book.submit(buy (1, 100, 10)); // rests in book, no match
+        book.submit(buy(1, 100, 10)); // rests in book, no match
         assert_eq!(book.order_count(), 1);
         assert!(book.cancel_order(1));
         assert_eq!(book.order_count(), 0);

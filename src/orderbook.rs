@@ -1,5 +1,5 @@
-use std::collections::{BTreeMap, VecDeque, HashMap};
-use crate::order::{Order, OrderId, Price, Side, Trade, OrderResult};
+use crate::order::{Order, OrderId, OrderResult, Price, Side, Trade};
+use std::collections::{BTreeMap, HashMap, VecDeque};
 
 /// The order book for a single symbol
 pub struct OrderBook {
@@ -7,7 +7,7 @@ pub struct OrderBook {
     bids: BTreeMap<Price, VecDeque<Order>>,
     /// Sell orders - lowest price first
     asks: BTreeMap<Price, VecDeque<Order>>,
-    /// Fast lookup of order by ID for cancelation 
+    /// Fast lookup of order by ID for cancelation
     order_index: HashMap<OrderId, (Side, Price)>,
     /// Symbol this handles
     pub symbol: String,
@@ -23,7 +23,7 @@ impl OrderBook {
             symbol: symbol.to_string(),
         }
     }
-    
+
     /// Number of orders currently in the book
     pub fn order_count(&self) -> usize {
         self.order_index.len()
@@ -32,28 +32,36 @@ impl OrderBook {
     pub fn best_bid(&self) -> Option<Price> {
         self.bids.keys().next_back().copied()
     }
-    
+
     /// Best ask price (lowest sell)
     pub fn best_ask(&self) -> Option<Price> {
         self.asks.keys().next().copied()
     }
-    
+
     /// Add an order to the resting book
     fn add_to_book(&mut self, order: Order) {
         let side = order.side.clone();
         let price = order.price;
         let id = order.id;
         match side {
-            Side::Buy => self.bids.entry(price).or_insert_with(VecDeque::new).push_back(order),
-            Side::Sell => self.asks.entry(price).or_insert_with(VecDeque::new).push_back(order),
+            Side::Buy => self
+                .bids
+                .entry(price)
+                .or_insert_with(VecDeque::new)
+                .push_back(order),
+            Side::Sell => self
+                .asks
+                .entry(price)
+                .or_insert_with(VecDeque::new)
+                .push_back(order),
         }
         self.order_index.insert(id, (side, price));
     }
 
-    /// Submit an order - matches immediately if possible, rest in book otherwise 
+    /// Submit an order - matches immediately if possible, rest in book otherwise
     pub fn submit(&mut self, mut order: Order) -> OrderResult {
         let mut trades = Vec::new();
-        
+
         match order.side {
             Side::Buy => {
                 // Match against asks - lowest ask first
@@ -138,12 +146,12 @@ impl OrderBook {
             Some(entry) => entry,
             None => return false,
         };
-        
+
         let book = match side {
             Side::Buy => &mut self.bids,
             Side::Sell => &mut self.asks,
         };
-        
+
         if let Some(queue) = book.get_mut(&price) {
             queue.retain(|o| o.id != id);
             if queue.is_empty() {

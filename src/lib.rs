@@ -1,4 +1,3 @@
-
 //! # rust-orderbook-lib
 //!
 //! A production_grade order book library with price-time priority matching.

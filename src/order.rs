@@ -7,7 +7,7 @@ pub type Price = u64;
 ///Quantity in lots (integer)
 pub type Quantity = u64;
 
-/// Side of the order 
+/// Side of the order
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Side {
     Buy,
@@ -36,7 +36,7 @@ impl Order {
     }
 }
 
-/// A trade that occurred when teo orders matched 
+/// A trade that occurred when teo orders matched
 #[derive(Debug, Clone)]
 pub struct Trade {
     pub maker_order_id: OrderId,
@@ -50,7 +50,7 @@ pub struct Trade {
 pub enum OrderResult {
     ///Order fully filled - list of trades
     Filled(Vec<Trade>),
-    /// Order partially filled - trades so far, remaining quantity 
+    /// Order partially filled - trades so far, remaining quantity
     PartialFill(Vec<Trade>, Quantity),
     /// Order added to book with no immediate match
     Resting,
