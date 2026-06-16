@@ -44,17 +44,10 @@ impl OrderBook {
         let price = order.price;
         let id = order.id;
         match side {
-            Side::Buy => self
-                .bids
-                .entry(price)
-                .or_insert_with(VecDeque::new)
-                .push_back(order),
-            Side::Sell => self
-                .asks
-                .entry(price)
-                .or_insert_with(VecDeque::new)
-                .push_back(order),
+            Side::Buy => self.bids.entry(price).or_default().push_back(order),
+            Side::Sell => self.asks.entry(price).or_default().push_back(order),
         }
+
         self.order_index.insert(id, (side, price));
     }
 
