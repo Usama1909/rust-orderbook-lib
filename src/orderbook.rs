@@ -21,6 +21,11 @@ impl OrderIdGenerator {
         self.counter.fetch_add(1, Ordering::Relaxed)
     }
 }
+impl Default for OrderIdGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 /// The order book for a single symbol
 pub struct OrderBook {
     /// Buy orders - highest price first (we reverse the key)

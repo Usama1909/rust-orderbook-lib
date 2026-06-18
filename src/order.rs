@@ -21,10 +21,14 @@ impl OrderIdGenerator {
             next_id: AtomicU64::new(1),
         }
     }
-
     /// Get the next unique IF - safe to call from multiple thread at once
     pub fn next_id(&self) -> OrderId {
         self.next_id.fetch_add(1, Ordering::SeqCst)
+    }
+}
+impl Default for OrderIdGenerator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
