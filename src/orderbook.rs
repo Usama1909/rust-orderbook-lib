@@ -1,6 +1,24 @@
-use crate::order::{Order, OrderId, OrderResult, Price, Side, Trade};
+use crate::order::{Order, OrderId, OrderResult, Price,Quantity,  Side, Trade};
 use std::collections::{BTreeMap, HashMap, VecDeque};
+use std::sync::atomic::{AtomicU64, Ordering};
 
+#[derive(Debug)]
+pub enum OrderBookError {
+    DuplicateOrderId(OrderId)
+}
+
+pub struct OrderIdGenerator {
+    counter: AtomicU64,
+}
+
+impl OrderIdGenerator {
+    pub fn new() -> Self {
+        OrderIdGenerator { counter: AtomicU64::new(1) }
+    }
+    pub fn next_id(&self) -> OrderId {
+        self.counter.fetch_add(1, Ordering::Relaxed)
+    }
+}
 /// The order book for a single symbol
 pub struct OrderBook {
     /// Buy orders - highest price first (we reverse the key)
@@ -11,6 +29,7 @@ pub struct OrderBook {
     order_index: HashMap<OrderId, (Side, Price)>,
     /// Symbol this handles
     pub symbol: String,
+    id_generator: OrderIdGenerator,
 }
 
 impl OrderBook {
@@ -21,6 +40,7 @@ impl OrderBook {
             asks: BTreeMap::new(),
             order_index: HashMap::new(),
             symbol: symbol.to_string(),
+            id_generator: OrderIdGenerator::new(),
         }
     }
 
@@ -39,20 +59,32 @@ impl OrderBook {
     }
 
     /// Add an order to the resting book
-    fn add_to_book(&mut self, order: Order) {
-        let side = order.side.clone();
-        let price = order.price;
-        let id = order.id;
-        match side {
-            Side::Buy => self.bids.entry(price).or_default().push_back(order),
-            Side::Sell => self.asks.entry(price).or_default().push_back(order),
+    fn add_to_book(&mut self, order: Order) -> Result<(),  OrderBookError> {
+    let side = order.side.clone();
+    let price = order.price;
+    let id = order.id;
+        
+    if self.order_index.contains_key(&id) {
+        return Err(OrderBookError::DuplicateOrderId(id));
         }
 
-        self.order_index.insert(id, (side, price));
+    
+    match side {
+        Side::Buy => self
+            .bids.entry(price)
+            .or_default()
+            .push_back(order),
+        Side::Sell => self
+            .asks.entry(price)
+            .or_default()
+            .push_back(order),
+    }
+    self.order_index.insert(id, (side, price));
+    Ok(())
     }
 
     /// Submit an order - matches immediately if possible, rest in book otherwise
-    pub fn submit(&mut self, mut order: Order) -> OrderResult {
+    pub fn submit(&mut self, mut order: Order) -> Result<OrderResult, OrderBookError>{
         let mut trades = Vec::new();
 
         match order.side {
@@ -123,15 +155,21 @@ impl OrderBook {
         }
         if order.quantity > 0 {
             if trades.is_empty() {
-                self.add_to_book(order);
-                return OrderResult::Resting;
+                self.add_to_book(order)?;
+                return Ok(OrderResult::Resting);
             } else {
                 let remaining = order.quantity;
-                self.add_to_book(order);
-                return OrderResult::PartialFill(trades, remaining);
+                self.add_to_book(order)?;
+                return Ok(OrderResult::PartialFill(trades, remaining));
             }
         }
-        OrderResult::Filled(trades)
+        Ok(OrderResult::Filled(trades))
+    }
+    
+    pub fn submit_auto(&mut self, symbol:&str, side:Side, price: Price, quantity: Quantity) -> Result<OrderResult,  OrderBookError> {
+        let id = self.id_generator.next_id();
+        let order = Order::new(id, symbol, side, price, quantity);
+        self.submit(order)
     }
     /// Cancel an order by ID. Returns true if found and removed.
     pub fn cancel_order(&mut self, id: OrderId) -> bool {
