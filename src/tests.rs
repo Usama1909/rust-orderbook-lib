@@ -101,10 +101,10 @@ mod tests {
     fn test_concurrent_submit_auto_no_dulicate_ids() {
         use std::sync::{Arc, Mutex};
         use std::thread;
-        
+
         let book = Arc::new(Mutex::new(OrderBook::new("NVDA")));
         let mut handles = vec![];
-        
+
         for _ in 0..10 {
             let book = Arc::clone(&book);
             handles.push(thread::spawn(move || {

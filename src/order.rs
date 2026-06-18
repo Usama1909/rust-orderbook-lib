@@ -7,6 +7,27 @@ pub type Price = u64;
 ///Quantity in lots (integer)
 pub type Quantity = u64;
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
+/// thread-safe generator for unique order Ids
+pub struct OrderIdGenerator {
+    next_id: AtomicU64,
+}
+
+impl OrderIdGenerator {
+    /// Create a new generator starting at 1
+    pub fn new() -> Self {
+        OrderIdGenerator {
+            next_id: AtomicU64::new(1),
+        }
+    }
+
+    /// Get the next unique IF - safe to call from multiple thread at once
+    pub fn next_id(&self) -> OrderId {
+        self.next_id.fetch_add(1, Ordering::SeqCst)
+    }
+}
+
 /// Side of the order
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Side {
