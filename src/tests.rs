@@ -4,11 +4,11 @@ mod tests {
     use crate::orderbook::{OrderBook, OrderBookError};
 
     fn buy(id: u64, price: u64, qty: u64) -> Order {
-        Order::new(id, "NVDA", Side::Buy, price, qty)
+        Order::new_limit(id, "NVDA", Side::Buy, price, qty)
     }
 
     fn sell(id: u64, price: u64, qty: u64) -> Order {
-        Order::new(id, "NVDA", Side::Sell, price, qty)
+        Order::new_limit(id, "NVDA", Side::Sell, price, qty)
     }
     #[test]
     fn test_full_fill() {
@@ -23,6 +23,7 @@ mod tests {
         let mut book = OrderBook::new("NVDA");
         book.submit(sell(1, 200, 10)).unwrap();
         let result = book.submit(buy(2, 100, 10));
+        println!("DEBUG: {:?}", result);
         assert!(matches!(result, Ok(crate::order::OrderResult::Resting)));
         assert_eq!(book.order_count(), 2);
     }
@@ -85,8 +86,13 @@ mod tests {
     fn test_best_bid_ask() {
         let mut book = OrderBook::new("NVDA");
         book.submit(buy(1, 100, 10)).unwrap();
+        println!("after order 1: count={}", book.order_count());
         book.submit(buy(2, 105, 10)).unwrap();
+        println!("after order 2: count={}", book.order_count());
         book.submit(sell(3, 110, 10)).unwrap();
+        println!("after order 3: count={}", book.order_count());
+        println!("best_bid={:?}", book.best_bid());
+        println!("best_ask={:?}", book.best_ask());
         assert_eq!(book.best_bid(), Some(105));
         assert_eq!(book.best_ask(), Some(110));
     }

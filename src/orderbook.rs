@@ -68,7 +68,7 @@ impl OrderBook {
     /// Add an order to the resting book
     fn add_to_book(&mut self, order: Order) -> Result<(), OrderBookError> {
         let side = order.side.clone();
-        let price = order.price;
+        let price = order.price.expect("add_to_book called with a market order");
         let id = order.id;
 
         if self.order_index.contains_key(&id) {
@@ -95,8 +95,10 @@ impl OrderBook {
                         Some(p) => p,
                         None => break,
                     };
-                    if order.price < best_ask_price {
-                        break;
+                    if let Some(limit_price) = order.price {
+                        if limit_price < best_ask_price {
+                            break;
+                        }
                     }
                     let queue = self.asks.get_mut(&best_ask_price).unwrap();
                     let resting = queue.front_mut().unwrap();
@@ -127,8 +129,11 @@ impl OrderBook {
                         Some(p) => p,
                         None => break,
                     };
-                    if order.price > best_bid_price {
-                        break;
+
+                    if let Some(limit_price) = order.price {
+                        if limit_price > best_bid_price {
+                            break;
+                        }
                     }
                     let queue = self.bids.get_mut(&best_bid_price).unwrap();
                     let resting = queue.front_mut().unwrap();
@@ -174,7 +179,7 @@ impl OrderBook {
         quantity: Quantity,
     ) -> Result<OrderResult, OrderBookError> {
         let id = self.id_generator.next_id();
-        let order = Order::new(id, symbol, side, price, quantity);
+        let order = Order::new_limit(id, symbol, side, price, quantity);
         self.submit(order)
     }
     /// Cancel an order by ID. Returns true if found and removed.

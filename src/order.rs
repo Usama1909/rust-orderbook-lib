@@ -39,24 +39,46 @@ pub enum Side {
     Sell,
 }
 
-/// A signal order in the book
+/// Type of order - Limit waits in book, Market fills immediately or discards
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OrderType {
+    Limit,
+    Market,
+}
 #[derive(Debug, Clone)]
 pub struct Order {
     pub id: OrderId,
-    pub price: Price,
-    pub quantity: Quantity,
-    pub side: Side,
     pub symbol: String,
+    pub side: Side,
+    pub order_type: OrderType,
+    pub price: Option<Price>,
+    pub quantity: Quantity,
 }
 impl Order {
-    ///Create a new order
-    pub fn new(id: OrderId, symbol: &str, side: Side, price: Price, quantity: Quantity) -> Self {
-        Order {
+    pub fn new_limit(
+        id: OrderId,
+        symbol: &str,
+        side: Side,
+        price: Price,
+        quantity: Quantity,
+    ) -> Self {
+        Self {
             id,
-            price,
-            quantity,
-            side,
             symbol: symbol.to_string(),
+            side,
+            order_type: OrderType::Limit,
+            price: Some(price),
+            quantity,
+        }
+    }
+    pub fn new_market(id: OrderId, symbol: &str, side: Side, quantity: Quantity) -> Self {
+        Self {
+            id,
+            symbol: symbol.to_string(),
+            side,
+            order_type: OrderType::Market,
+            price: None,
+            quantity,
         }
     }
 }

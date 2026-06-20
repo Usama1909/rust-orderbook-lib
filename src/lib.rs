@@ -8,7 +8,7 @@
 //! use rust_orderbook_lib::orderbook::OrderBook;
 //!
 //! let mut book = OrderBook::new("NVDA");
-//! let order = Order::new(1, "NVDA", Side::Buy, 500, 10);
+//! let order = Order::new_limit(1, "NVDA", Side::Buy, 500, 10);
 //! book.submit(order);
 //! ```
 pub mod order;
