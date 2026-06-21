@@ -7,11 +7,12 @@ A production-grade order book library in Rust with price-time priority matching.
 ## Features
 - Integer prices and quantities — no floating point
 - Price-time priority matching (BTreeMap + VecDeque)
+- Limit orders and market orders
 - Partial fills
 - Cancel orders by ID
 - Trade events on every match
-- 9 passing tests
-
+- 13 passing tests
+  
 ## Performance
 | Operation | Time |
 |-----------|------|
