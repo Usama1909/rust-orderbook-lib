@@ -126,4 +126,26 @@ mod tests {
         let book = book.lock().unwrap();
         assert_eq!(book.order_count(), 1000);
     }
+    #[test]
+    fn test_market_order_fills_ava_liquidity() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(sell(1, 100, 5)).unwrap();
+        let market_buy = Order::new_market(2, "NVDA", Side::Buy, 10);
+        let result = book.submit(market_buy);
+        //only 5 were available, market order should parial fill and discard the rest
+        assert!(matches!(
+            result,
+            Ok(crate::order::OrderResult::PartialFill(_, 5))
+        ));
+        assert_eq!(book.order_count(), 0); //nothing rests - the unfilled t is discard
+    }
+    #[test]
+    fn test_market_order_no_liquidity_returns_unfilled() {
+        let mut book = OrderBook::new("NVDA");
+        //empty book, no sellers at all
+        let market_buy = Order::new_market(1, "NVDA", Side::Buy, 10);
+        let result = book.submit(market_buy);
+        assert!(matches!(result, Ok(crate::order::OrderResult::Unfilled)));
+        assert_eq!(book.order_count(), 0); //market order never rests
+    }
 }

@@ -1,4 +1,4 @@
-use crate::order::{Order, OrderId, OrderResult, Price, Quantity, Side, Trade};
+use crate::order::{Order, OrderId, OrderResult, OrderType, Price, Quantity, Side, Trade};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -159,13 +159,23 @@ impl OrderBook {
             }
         }
         if order.quantity > 0 {
-            if trades.is_empty() {
-                self.add_to_book(order)?;
-                return Ok(OrderResult::Resting);
+            if order.order_type == OrderType::Market {
+                // Market orders never rest in the book - discard whatever didn't fill
+                if trades.is_empty() {
+                    return Ok(OrderResult::Unfilled);
+                } else {
+                    return Ok(OrderResult::PartialFill(trades, order.quantity));
+                }
             } else {
-                let remaining = order.quantity;
-                self.add_to_book(order)?;
-                return Ok(OrderResult::PartialFill(trades, remaining));
+                // Limit orders rest in the book waiting for a match
+                if trades.is_empty() {
+                    self.add_to_book(order)?;
+                    return Ok(OrderResult::Resting);
+                } else {
+                    let remaining = order.quantity;
+                    self.add_to_book(order)?;
+                    return Ok(OrderResult::PartialFill(trades, remaining));
+                }
             }
         }
         Ok(OrderResult::Filled(trades))

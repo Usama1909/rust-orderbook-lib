@@ -99,6 +99,7 @@ pub enum OrderResult {
     Filled(Vec<Trade>),
     /// Order partially filled - trades so far, remaining quantity
     PartialFill(Vec<Trade>, Quantity),
+    Unfilled,
     /// Order added to book with no immediate match
     Resting,
 }
