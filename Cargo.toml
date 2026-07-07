@@ -6,7 +6,9 @@ description = "A production-grade order book library with price-time priority ma
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Usama1909/rust-orderbook-lib"
 
+
 [dependencies]
+thiserror ="1"
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }

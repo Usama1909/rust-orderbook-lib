@@ -148,4 +148,29 @@ mod tests {
         assert!(matches!(result, Ok(crate::order::OrderResult::Unfilled)));
         assert_eq!(book.order_count(), 0); //market order never rests
     }
+    #[test]
+    fn test_total_bid_value() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 10)).unwrap();
+        book.submit(buy(2, 200, 5)).unwrap();
+        assert_eq!(book.total_bid_value(), 2000); //(100*10) + (200*5)
+    }
+
+    #[test]
+    fn test_orders_for_symbol() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 10)).unwrap();
+        book.submit(buy(2, 200, 5)).unwrap();
+        let orders = book.orders_for_symbol("NVDA");
+        assert_eq!(orders.len(), 2);
+    }
+
+    #[test]
+    fn test_depth_at_price() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 10)).unwrap();
+        book.submit(buy(2, 100, 5)).unwrap();
+        assert_eq!(book.depth_at_price(100), 2);
+        assert_eq!(book.depth_at_price(200), 0);
+    }
 }

@@ -2,9 +2,21 @@ use crate::order::{Order, OrderId, OrderResult, OrderType, Price, Quantity, Side
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 
-#[derive(Debug)]
+use thiserror::Error;
+
+#[derive(Error, Debug)]
 pub enum OrderBookError {
+    #[error("Duplicate order ID: {0}")]
     DuplicateOrderId(OrderId),
+
+    #[error("Order not found: {0}")]
+    OrderNotFound(OrderId),
+
+    #[error("Invalid price for market order")]
+    InvalidMarketOrderPrice,
+
+    #[error("Symbol mismatch: expected {expected}, got {actual}")]
+    SymbolMismatch { expected: String, actual: String },
 }
 
 pub struct OrderIdGenerator {
@@ -211,5 +223,29 @@ impl OrderBook {
             }
         }
         true
+    }
+    /// Total value of all resting Orders on the side
+    pub fn total_bid_value(&self) -> u64 {
+        self.bids
+            .values()
+            .flat_map(|queue| queue.iter())
+            .map(|order| order.price.unwrap_or(0) * order.quantity)
+            .sum()
+    }
+
+    /// All orders for a specific symbol (returns cloned vec)
+    pub fn orders_for_symbol(&self, symbol: &str) -> Vec<Order> {
+        self.bids
+            .values()
+            .chain(self.asks.values())
+            .flat_map(|queue| queue.iter())
+            .filter(|order| order.symbol == symbol)
+            .cloned()
+            .collect()
+    }
+
+    /// Count of bids at a speicifc price level
+    pub fn depth_at_price(&self, price: Price) -> usize {
+        self.bids.get(&price).map(|queue| queue.len()).unwrap_or(0)
     }
 }
