@@ -1,6 +1,6 @@
 # rust-orderbook-lib
 
-A production-grade order book library in Rust with price-time priority matching.
+A production-grade order book library in Rust with price-time priority matching and execution quality analysis.
 
 ![CI](https://github.com/Usama1909/rust-orderbook-lib/actions/workflows/ci.yml/badge.svg)
 
@@ -11,8 +11,10 @@ A production-grade order book library in Rust with price-time priority matching.
 - Partial fills
 - Cancel orders by ID
 - Trade events on every match
-- 13 passing tests
-  
+- Slippage analysis — weighted fill price vs expected price
+- Thread-safe order ID generation
+- 17 passing tests
+
 ## Performance
 | Operation | Time |
 |-----------|------|
@@ -33,8 +35,16 @@ use rust_orderbook_lib::order::{Order, Side};
 use rust_orderbook_lib::orderbook::OrderBook;
 
 let mut book = OrderBook::new("NVDA");
-book.submit(Order::new(1, "NVDA", Side::Buy, 500, 10));
-book.submit(Order::new(2, "NVDA", Side::Sell, 490, 10));
+book.submit(Order::new_limit(1, "NVDA", Side::Buy, 500, 10));
+book.submit(Order::new_limit(2, "NVDA", Side::Sell, 490, 10));
+```
+
+## Slippage Analysis
+```rust
+let report = OrderBook::analyze_slippage(&trades, 500).unwrap();
+println!("Slippage: {} ticks ({:.2}%)", 
+    report.slippage_ticks, 
+    report.slippage_pct());
 ```
 
 ## License
