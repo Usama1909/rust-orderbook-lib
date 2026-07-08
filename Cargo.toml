@@ -6,6 +6,9 @@ description = "A production-grade order book library with price-time priority ma
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Usama1909/rust-orderbook-lib"
 
+keywords = ["orderbook", "trading", "matching-engine", "finance"]
+categories = ["data-structures", "finance"]
+
 
 [dependencies]
 thiserror ="1"
