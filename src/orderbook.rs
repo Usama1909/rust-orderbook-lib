@@ -1,4 +1,6 @@
-use crate::order::{Order, OrderId, OrderResult, OrderType, Price, Quantity, Side, Trade};
+use crate::order::{
+    Order, OrderId, OrderResult, OrderType, Price, Quantity, Side, SlippageReport, Trade,
+};
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -247,5 +249,26 @@ impl OrderBook {
     /// Count of bids at a speicifc price level
     pub fn depth_at_price(&self, price: Price) -> usize {
         self.bids.get(&price).map(|queue| queue.len()).unwrap_or(0)
+    }
+    /// Analyze slippage for a set of executed trades against an expected price
+    pub fn analyze_slippage(trades: &[Trade], expected_price: Price) -> Option<SlippageReport> {
+        if trades.is_empty() {
+            return None;
+        }
+
+        let total_quantity: Quantity = trades.iter().map(|t| t.quantity).sum();
+
+        let weighted_price: u64 =
+            trades.iter().map(|t| t.price * t.quantity).sum::<u64>() / total_quantity;
+
+        let slippage_ticks = weighted_price as i64 - expected_price as i64;
+
+        Some(SlippageReport {
+            symbol: trades[0].symbol.clone(),
+            expected_price,
+            actual_avg_price: weighted_price,
+            total_quantity,
+            slippage_ticks,
+        })
     }
 }

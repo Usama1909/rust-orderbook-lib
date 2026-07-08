@@ -103,3 +103,18 @@ pub enum OrderResult {
     /// Order added to book with no immediate match
     Resting,
 }
+// Analysis of execution quality for a set of trades
+#[derive(Debug, Clone)]
+pub struct SlippageReport {
+    pub symbol: String,
+    pub expected_price: Price,
+    pub actual_avg_price: Price,
+    pub total_quantity: Quantity,
+    pub slippage_ticks: i64,
+}
+
+impl SlippageReport {
+    pub fn slippage_pct(&self) -> f64 {
+        (self.slippage_ticks.abs() as f64 / self.expected_price as f64) * 100.0
+    }
+}

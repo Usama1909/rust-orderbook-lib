@@ -173,4 +173,31 @@ mod tests {
         assert_eq!(book.depth_at_price(100), 2);
         assert_eq!(book.depth_at_price(200), 0);
     }
+
+    #[test]
+    fn test_slippage_analysis() {
+        use crate::orderbook::OrderBook;
+
+        let trades = vec![
+            crate::order::Trade {
+                maker_order_id: 1,
+                taker_order_id: 2,
+                price: 502,
+                quantity: 10,
+                symbol: String::from("NVDA"),
+            },
+            crate::order::Trade {
+                maker_order_id: 3,
+                taker_order_id: 2,
+                price: 504,
+                quantity: 5,
+                symbol: String::from("NVDA"),
+            },
+        ];
+
+        let report = OrderBook::analyze_slippage(&trades, 500).unwrap();
+        assert_eq!(report.expected_price, 500);
+        assert_eq!(report.slippage_ticks, 2);
+        assert!(report.slippage_pct() > 0.0);
+    }
 }
