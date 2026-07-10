@@ -245,7 +245,58 @@ impl OrderBook {
             .cloned()
             .collect()
     }
+    pub fn amend_order(
+        &mut self,
+        id: OrderId,
+        new_price: Option<Price>,
+        new_quantity: Quantity,
+    ) -> Result<(), OrderBookError> {
+        let (side, price) = self
+            .order_index
+            .get(&id)
+            .cloned()
+            .ok_or(OrderBookError::OrderNotFound(id))?;
 
+        let book = match side {
+            Side::Buy => &mut self.bids,
+            Side::Sell => &mut self.asks,
+        };
+
+        let price_changed = matches!(new_price, Some(p) if p != price);
+
+        if !price_changed {
+            if let Some(queue) = book.get_mut(&price) {
+                if let Some(order) = queue.iter_mut().find(|o| o.id == id) {
+                    if new_quantity <= order.quantity {
+                        order.quantity = new_quantity;
+                        return Ok(());
+                    }
+                }
+            }
+        }
+
+        // Price changed, or quantity increased - loses time priority.
+        // Cancel and resubmit as a new resting order at the (possible new) price.
+        let symbol = if let Some(queue) = book.get(&price) {
+            queue
+                .iter()
+                .find(|o| o.id == id)
+                .map(|o| o.symbol.clone())
+                .ok_or(OrderBookError::OrderNotFound(id))?
+        } else {
+            return Err(OrderBookError::OrderNotFound(id));
+        };
+        self.cancel_order(id);
+        let target_price = new_price.unwrap_or(price);
+        self.submit(Order::new_limit(
+            id,
+            &symbol,
+            side,
+            target_price,
+            new_quantity,
+        ))?;
+        Ok(())
+    }
     /// Count of bids at a speicifc price level
     pub fn depth_at_price(&self, price: Price) -> usize {
         self.bids.get(&price).map(|queue| queue.len()).unwrap_or(0)

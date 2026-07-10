@@ -200,4 +200,20 @@ mod tests {
         assert_eq!(report.slippage_ticks, 2);
         assert!(report.slippage_pct() > 0.0);
     }
+    #[test]
+    fn test_amend_reduce_quantity_keeps_order() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 10)).unwrap();
+        book.amend_order(1, None, 6).unwrap();
+        assert_eq!(book.order_count(), 1);
+        assert_eq!(book.total_bid_value(), 100 * 6);
+    }
+    #[test]
+    fn test_amend_price_change_loses_priority() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 5)).unwrap();
+        book.amend_order(1, Some(101), 5).unwrap();
+        assert_eq!(book.order_count(), 1);
+        assert_eq!(book.total_bid_value(), 101 * 5);
+    }
 }
