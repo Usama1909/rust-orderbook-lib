@@ -8,7 +8,7 @@ A production-grade order book library in Rust with price-time priority matching.
 - Partial fills
 - Cancel orders by ID
 - Trade events on every match
-- 9 passing tests
+- 20 passing tests
 
 ## Performance
 | Operation | Time |
