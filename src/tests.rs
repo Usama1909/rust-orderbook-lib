@@ -216,4 +216,24 @@ mod tests {
         assert_eq!(book.order_count(), 1);
         assert_eq!(book.total_bid_value(), 101 * 5);
     }
+
+    #[test]
+    fn test_book_snapshot() {
+        let mut book = OrderBook::new("NVDA");
+        book.submit(buy(1, 100, 5)).unwrap();
+        book.submit(buy(2, 100, 3)).unwrap(); // Same price, aggregate with orer 1
+        book.submit(buy(3, 99, 10)).unwrap();
+        book.submit(sell(4, 101, 4)).unwrap();
+        book.submit(sell(5, 102, 6)).unwrap();
+
+        let (bids, asks) = book.book_snapshot(2);
+
+        assert_eq!(bids.len(), 2);
+        assert_eq!(bids[0].price, 100);
+        assert_eq!(bids[0].quantity, 8); // 5+3 aggregated
+
+        assert_eq!(asks.len(), 2);
+        assert_eq!(asks[0].price, 101);
+        assert_eq!(asks[1].price, 102);
+    }
 }

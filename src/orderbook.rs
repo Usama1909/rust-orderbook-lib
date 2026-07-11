@@ -1,5 +1,6 @@
 use crate::order::{
-    Order, OrderId, OrderResult, OrderType, Price, Quantity, Side, SlippageReport, Trade,
+    Order, OrderId, OrderResult, OrderType, Price, PriceLevel, Quantity, Side, SlippageReport,
+    Trade,
 };
 use std::collections::{BTreeMap, HashMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -301,6 +302,32 @@ impl OrderBook {
     pub fn depth_at_price(&self, price: Price) -> usize {
         self.bids.get(&price).map(|queue| queue.len()).unwrap_or(0)
     }
+    /// Returns top `depth` price levels on each side: (bids, asks)
+    pub fn book_snapshot(&self, depth: usize) -> (Vec<PriceLevel>, Vec<PriceLevel>) {
+        let bid_levels = self
+            .bids
+            .iter()
+            .rev()
+            .take(depth)
+            .map(|(price, queue)| PriceLevel {
+                price: *price,
+                quantity: queue.iter().map(|o| o.quantity).sum(),
+            })
+            .collect();
+
+        let ask_levels = self
+            .asks
+            .iter()
+            .take(depth)
+            .map(|(price, queue)| PriceLevel {
+                price: *price,
+                quantity: queue.iter().map(|o| o.quantity).sum(),
+            })
+            .collect();
+
+        (bid_levels, ask_levels)
+    }
+
     /// Analyze slippage for a set of executed trades against an expected price
     pub fn analyze_slippage(trades: &[Trade], expected_price: Price) -> Option<SlippageReport> {
         if trades.is_empty() {

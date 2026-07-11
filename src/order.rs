@@ -113,6 +113,12 @@ pub struct SlippageReport {
     pub slippage_ticks: i64,
 }
 
+#[derive(Debug, Clone)]
+pub struct PriceLevel {
+    pub price: Price,
+    pub quantity: Quantity,
+}
+
 impl SlippageReport {
     pub fn slippage_pct(&self) -> f64 {
         (self.slippage_ticks.abs() as f64 / self.expected_price as f64) * 100.0
