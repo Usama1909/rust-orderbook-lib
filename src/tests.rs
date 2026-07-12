@@ -236,4 +236,21 @@ mod tests {
         assert_eq!(asks[0].price, 101);
         assert_eq!(asks[1].price, 102);
     }
+    #[test]
+    fn test_purge_expired() {
+        use std::thread::sleep;
+        use std::time::Duration;
+
+        let mut book = OrderBook::new("NVDA");
+        let short_lived =
+            Order::new_limit(1, "NVDA", Side::Buy, 100, 5).with_expiry(Duration::from_millis(10));
+        book.submit(short_lived).unwrap();
+        book.submit(buy(2, 100, 5)).unwrap(); //no expiry, permanent
+
+        sleep(Duration::from_millis(20));
+
+        let removed = book.purge_expired();
+        assert_eq!(removed, 1);
+        assert_eq!(book.order_count(), 1);
+    }
 }

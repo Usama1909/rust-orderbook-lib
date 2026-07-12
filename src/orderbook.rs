@@ -227,6 +227,33 @@ impl OrderBook {
         }
         true
     }
+
+    /// Remove all expired orders from both sides of the book.
+    /// Returns the numbers of orders removed.
+    pub fn purge_expired(&mut self) -> usize {
+        let mut removed_ids = Vec::new();
+
+        for book in [&mut self.bids, &mut self.asks] {
+            book.retain(|_price, queue| {
+                queue.retain(|order| {
+                    if order.is_expired() {
+                        removed_ids.push(order.id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+                queue.is_empty()
+            });
+        }
+
+        for id in &removed_ids {
+            self.order_index.remove(id);
+        }
+
+        removed_ids.len()
+    }
+
     /// Total value of all resting Orders on the side
     pub fn total_bid_value(&self) -> u64 {
         self.bids

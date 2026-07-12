@@ -1,3 +1,4 @@
+use std::time::{Duration, Instant};
 /// Unique identifier for each order
 pub type OrderId = u64;
 
@@ -47,6 +48,7 @@ pub enum OrderType {
 }
 #[derive(Debug, Clone)]
 pub struct Order {
+    pub expires_at: Option<Instant>,
     pub id: OrderId,
     pub symbol: String,
     pub side: Side,
@@ -63,6 +65,7 @@ impl Order {
         quantity: Quantity,
     ) -> Self {
         Self {
+            expires_at: None,
             id,
             symbol: symbol.to_string(),
             side,
@@ -73,12 +76,25 @@ impl Order {
     }
     pub fn new_market(id: OrderId, symbol: &str, side: Side, quantity: Quantity) -> Self {
         Self {
+            expires_at: None,
             id,
             symbol: symbol.to_string(),
             side,
             order_type: OrderType::Market,
             price: None,
             quantity,
+        }
+    }
+
+    pub fn with_expiry(mut self, ttl: Duration) -> Self {
+        self.expires_at = Some(Instant::now() + ttl);
+        self
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match self.expires_at {
+            Some(expiry) => Instant::now() >= expiry,
+            None => false,
         }
     }
 }
