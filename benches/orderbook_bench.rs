@@ -2,15 +2,14 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rust_orderbook_lib::order::{Order, Side};
 use rust_orderbook_lib::orderbook::OrderBook;
 
-/// Build a realistic resting book: `levels` price levels per side,
-/// `orders_per_level` orders queued at each price.
+/// Realistic resting book: `levels` price levels per side,
+/// `orders_per_level` orders queued at each price (1000 x 5 = 10,000 orders).
 fn build_deep_book(levels: u64, orders_per_level: u64) -> OrderBook {
     let mut book = OrderBook::new("NVDA");
     let mut id = 1;
-
     for level in 0..levels {
-        let bid_price = 1000 - level; // bids descending from 1000
-        let ask_price = 1001 + level; // asks ascending from 1001
+        let bid_price = 1000 - level;
+        let ask_price = 1001 + level;
         for _ in 0..orders_per_level {
             book.submit(Order::new_limit(id, "NVDA", Side::Buy, bid_price, 10))
                 .unwrap();
@@ -23,60 +22,47 @@ fn build_deep_book(levels: u64, orders_per_level: u64) -> OrderBook {
     book
 }
 
-fn bench_submit_resting_deep_book(c: &mut Criterion) {
-    c.bench_function("submit resting order (1000 levels, deep book)", |b| {
-        b.iter_batched(
-            || build_deep_book(1000, 5),
-            |mut book| {
-                book.submit(black_box(Order::new_limit(
-                    999_999,
-                    "NVDA",
-                    Side::Buy,
-                    500,
-                    10,
-                )))
-                .unwrap();
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
+// Book built ONCE outside the timed loop. Each iteration is net-neutral, so we
+// measure the operation on a steady 1000-level / 10k-order book, not its construction.
+
+fn bench_submit_cancel(c: &mut Criterion) {
+    let mut book = build_deep_book(1000, 5);
+    let mut id = 1_000_000u64;
+    c.bench_function(
+        "submit + cancel resting order (1000-level, 10k-order book)",
+        |b| {
+            b.iter(|| {
+                book.submit(black_box(Order::new_limit(id, "NVDA", Side::Buy, 500, 10)))
+                    .unwrap();
+                book.cancel_order(black_box(id));
+                id += 1;
+            })
+        },
+    );
 }
 
-fn bench_submit_matching_deep_book(c: &mut Criterion) {
-    c.bench_function("submit matching order (1000 levels, deep book)", |b| {
-        b.iter_batched(
-            || build_deep_book(1000, 5),
-            |mut book| {
+fn bench_match(c: &mut Criterion) {
+    let mut book = build_deep_book(1000, 5);
+    let mut id = 2_000_000u64;
+    c.bench_function(
+        "match at top of book + reseed (1000-level, 10k-order book)",
+        |b| {
+            b.iter(|| {
+                book.submit(black_box(Order::new_limit(id, "NVDA", Side::Buy, 1001, 10)))
+                    .unwrap();
                 book.submit(black_box(Order::new_limit(
-                    999_999,
+                    id + 1,
                     "NVDA",
-                    Side::Buy,
+                    Side::Sell,
                     1001,
                     10,
                 )))
                 .unwrap();
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
+                id += 2;
+            })
+        },
+    );
 }
 
-fn bench_cancel_deep_book(c: &mut Criterion) {
-    c.bench_function("cancel order (1000 levels, deep book)", |b| {
-        b.iter_batched(
-            || build_deep_book(1000, 5),
-            |mut book| {
-                book.cancel_order(black_box(1));
-            },
-            criterion::BatchSize::SmallInput,
-        )
-    });
-}
-
-criterion_group!(
-    benches,
-    bench_submit_resting_deep_book,
-    bench_submit_matching_deep_book,
-    bench_cancel_deep_book
-);
+criterion_group!(benches, bench_submit_cancel, bench_match);
 criterion_main!(benches);
