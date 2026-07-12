@@ -13,7 +13,7 @@ A production-grade order book library in Rust with price-time priority matching 
 - Trade events on every match
 - Slippage analysis — weighted fill price vs expected price
 - Thread-safe order ID generation
-- 17 passing tests
+- 20 passing tests
 
 ## Performance
 | Operation | Time |
